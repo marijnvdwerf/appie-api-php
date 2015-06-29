@@ -1,0 +1,87 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/vendor/autoload.php';
+
+use Appie\Client;
+use GuzzleHttp\Psr7\Uri;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Helper\QuestionHelper;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\Question;
+
+$console = new Application();
+
+$console
+    ->register('login')
+    ->setCode(function (InputInterface $input, OutputInterface $output) use ($console) {
+
+        $output->writeln('Log in met je Mijn ah.nl-profiel');
+
+        $emailAddressQuestion = (new Question('E-mailadres:'))
+            ->setValidator(function ($value) {
+                $value = trim($value);
+                if (empty($value)) {
+                    throw new \Exception('E-mailadres mag niet leeg zijn');
+                }
+
+                if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                    throw new \Exception('Geef een geldig e-mailadres op');
+                }
+
+                return $value;
+            });
+
+        $passwordQuestion = (new Question('Wachtwoord:'))
+            ->setHidden(true)
+            ->setHiddenFallback(false)
+            ->setValidator(function ($password) {
+                $password = trim($password);
+
+                if ($password == '') {
+                    throw new \Exception('Wachtwoord mag niet leeg zijn');
+                }
+
+                return $password;
+            });
+
+        /** @var QuestionHelper $helper */
+        $helper = $console->getHelperSet()->get('question');
+        $emailAddress = $helper->ask($input, $output, $emailAddressQuestion);
+        $password = $helper->ask($input, $output, $passwordQuestion);
+
+        $androidClient = new Client('android', '4.4.0', 'G00gMo81L');
+
+        $guzzle = new GuzzleHttp\Client();
+
+        $uri = new Uri('https://ms.ah.nl/rest/ah/v1/members/member');
+        $uri = Appie\RequestSigner::sign($uri, $androidClient, $emailAddress);
+        $request = (new GuzzleHttp\Psr7\Request('GET', $uri))
+            ->withAddedHeader('User-Agent', 'Appie/4.4.0 Model/Android+Phone Android/5.0.2-API21 Member/0')
+            ->withAddedHeader('Content-Type', 'application/json')
+            ->withAddedHeader('Accept', 'application/json')
+            ->withAddedHeader('Deliver-Errors-In-Json', 'true')
+            ->withAddedHeader('X-ClientName', 'android');
+
+        try {
+            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
+                $output->writeln('Inloggen…');
+            }
+
+            $response = $guzzle->send($request, ['auth' => [$emailAddress, $password]]);
+        } catch (GuzzleHttp\Exception\ClientException $exeption) {
+            $body = $exeption->getResponse()->getBody();
+            $json = json_decode($body);
+
+            throw new Exception($json->errors[0]->messages[0]->message);
+        }
+
+        $memberJson = json_decode($response->getBody());
+        $output->writeln([
+            'ID: ' . $memberJson->memberId,
+            'Token: ' . $memberJson->token
+        ]);
+    });
+
+$console->run();

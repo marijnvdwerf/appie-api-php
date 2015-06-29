@@ -1,0 +1,32 @@
+{
+  "name": "marijnvdwerf/php-appie-api",
+  "description": "Wrapper for the ‘Appie’ API",
+  "type": "library",
+  "keywords": [
+    "ah",
+    "appie",
+    "albertheijn",
+    "albert heijn"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Marijn van der Werf",
+      "email": "mail@marijnvdwerf.nl"
+    }
+  ],
+  "require": {
+    "guzzlehttp/guzzle": "^6.0",
+    "phpunit/phpunit": "^4.7",
+    "symfony/var-dumper": "^2.7",
+    "symfony/console": "^2.7"
+  },
+  "autoload": {
+    "psr-4": {
+      "Appie\\": "src"
+    }
+  },
+  "bin": [
+    "appie"
+  ]
+}
