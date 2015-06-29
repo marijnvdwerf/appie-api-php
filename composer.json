@@ -1,5 +1,5 @@
 {
-  "name": "marijnvdwerf/php-appie-api",
+  "name": "marijnvdwerf/appie-api",
   "description": "Wrapper for the ‘Appie’ API",
   "type": "library",
   "keywords": [
